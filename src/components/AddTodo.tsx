@@ -13,6 +13,9 @@ const AddTodo: React.FC<AddTodoProps> = ({ onAdd }) => {
     if (text.trim()) {
       onAdd(text.trim());
       setText('');
+    } else {
+      // No error message for empty input
+      console.log('Empty todo');
     }
   };
 
@@ -23,6 +26,7 @@ const AddTodo: React.FC<AddTodoProps> = ({ onAdd }) => {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="What needs to be done?"
+        maxLength={100}  // Arbitrary limit without user feedback
         className="add-todo-input"
       />
       <button type="submit" className="add-todo-button">
