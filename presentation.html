@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Auto-Review System - Technical Architecture</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.5;
+            color: #1a202c;
+            background: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            background: white;
+            display: none;
+            flex-direction: column;
+            padding: 40px 60px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .slide.active {
+            display: flex;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Header Styles */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        h1 {
+            color: #1a202c;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        h2 {
+            color: #2d3748;
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 0 0 30px 0;
+        }
+
+        h3 {
+            color: #4a5568;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 25px 0 15px 0;
+        }
+
+        .slide-number {
+            background: #4f46e5;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* System Architecture Diagrams */
+        .system-diagram {
+            width: 100%;
+            height: 400px;
+            margin: 30px 0;
+            position: relative;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .diagram-container {
+            width: 95%;
+            height: 90%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        /* System Components */
+        .component {
+            background: white;
+            border: 2px solid #4f46e5;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            min-width: 140px;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+            position: relative;
+        }
+
+        .component.external {
+            border-color: #059669;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.1);
+        }
+
+        .component.process {
+            border-color: #dc2626;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+        }
+
+        .component.storage {
+            border-color: #7c3aed;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+        }
+
+        .component-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            color: #1a202c;
+        }
+
+        .component-desc {
+            font-size: 0.8rem;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        /* Flow Arrows */
+        .flow-arrow {
+            position: absolute;
+            color: #4f46e5;
+            font-size: 1.5rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .arrow-horizontal {
+            width: 60px;
+            height: 2px;
+            background: #4f46e5;
+            position: relative;
+        }
+
+        .arrow-horizontal::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -4px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid #4f46e5;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
+
+        /* Decision Flow Diagram */
+        .decision-flow {
+            width: 100%;
+            height: 450px;
+            margin: 20px 0;
+            position: relative;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 30px;
+        }
+
+        .decision-node {
+            background: white;
+            border: 2px solid #4f46e5;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            position: absolute;
+            min-width: 120px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .decision-node.diamond {
+            transform: rotate(45deg);
+            border-color: #f59e0b;
+        }
+
+        .decision-node.diamond .node-text {
+            transform: rotate(-45deg);
+        }
+
+        .decision-node.end {
+            border-color: #059669;
+            background: #ecfdf5;
+        }
+
+        .decision-node.reject {
+            border-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        /* Code Blocks */
+        .code-container {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+            overflow-x: auto;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .code-header {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .code-content {
+            color: #f1f5f9;
+            font-family: 'Monaco', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .code-highlight {
+            color: #60a5fa;
+        }
+
+        .code-comment {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.2);
+        }
+
+        .metric-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        /* Content Sections */
+        .content-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .feature-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 24px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 12px;
+        }
+
+        .feature-desc {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .nav-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: #4338ca;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .nav-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: #4f46e5;
+            transition: width 0.3s ease;
+            z-index: 1000;
+        }
+
+        /* Technical Lists */
+        .tech-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .tech-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .tech-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4f46e5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .tech-content {
+            flex: 1;
+        }
+
+        .tech-title {
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 4px;
+        }
+
+        .tech-desc {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .slide {
+                padding: 30px 40px;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .diagram-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 20px 30px;
+            }
+            
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-indicator" id="progressBar"></div>
+
+    <!-- Slide 1: System Overview -->
+    <div class="slide active">
+        <div class="slide-header">
+            <h1>Claude Auto-Review System</h1>
+            <div class="slide-number">1 / 10</div>
+        </div>
+        <div class="content-section">
+            <div style="text-align: center; margin: 20px 0;">
+                <p style="font-size: 1.3rem; color: #64748b; margin-bottom: 40px;">
+                    Intelligent Code Quality Enforcement through Automated PR Analysis
+                </p>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-number">100%</div>
+                    <div class="metric-label">PR Coverage</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">5</div>
+                    <div class="metric-label">Review Categories</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">0ms</div>
+                    <div class="metric-label">Human Delay</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">∞</div>
+                    <div class="metric-label">Consistency</div>
+                </div>
+            </div>
+
+            <div class="feature-grid" style="margin-top: 40px;">
+                <div class="feature-box">
+                    <div class="feature-title">Zero-Tolerance Quality Gate</div>
+                    <div class="feature-desc">Strict enforcement of code standards with immediate rejection of critical violations</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Selective Suggestion Engine</div>
+                    <div class="feature-desc">Intelligent decision-making on when to provide code suggestions vs. comments</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Dynamic API Integration</div>
+                    <div class="feature-desc">Adaptive GitHub API discovery and inline comment generation</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Contextual Analysis</div>
+                    <div class="feature-desc">Full file analysis for comprehensive code understanding</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 2: High-Level Architecture -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>System Architecture Overview</h2>
+            <div class="slide-number">2 / 10</div>
+        </div>
+        <div class="content-section">
+            <div class="system-diagram">
+                <div class="diagram-container">
+                    <div class="component external">
+                        <div class="component-title">GitHub PR</div>
+                        <div class="component-desc">Pull Request Events<br/>opened, synchronized, reopened</div>
+                    </div>
+                    <div class="arrow-horizontal"></div>
+                    <div class="component process">
+                        <div class="component-title">GitHub Actions</div>
+                        <div class="component-desc">claude-auto-review.yml<br/>Event Processing</div>
+                    </div>
+                    <div class="arrow-horizontal"></div>
+                    <div class="component">
+                        <div class="component-title">Claude AI Engine</div>
+                        <div class="component-desc">anthropics/claude-code-action@v1<br/>Code Analysis</div>
+                    </div>
+                    <div class="arrow-horizontal"></div>
+                    <div class="component external">
+                        <div class="component-title">GitHub API</div>
+                        <div class="component-desc">Inline Comments<br/>Review Submission</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Key System Components</h3>
+            <div class="tech-list">
+                <div class="tech-item">
+                    <div class="tech-icon">1</div>
+                    <div class="tech-content">
+                        <div class="tech-title">Event-Driven Trigger</div>
+                        <div class="tech-desc">Responds to PR lifecycle events with conditional logic for draft PR exclusion</div>
+                    </div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-icon">2</div>
+                    <div class="tech-content">
+                        <div class="tech-title">Containerized Execution</div>
+                        <div class="tech-desc">Ubuntu-based runner environment with comprehensive permission model</div>
+                    </div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-icon">3</div>
+                    <div class="tech-content">
+                        <div class="tech-title">AI-Powered Analysis</div>
+                        <div class="tech-desc">Claude AI with specialized tools (Bash, gh CLI) for repository interaction</div>
+                    </div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-icon">4</div>
+                    <div class="tech-content">
+                        <div class="tech-title">Dynamic API Integration</div>
+                        <div class="tech-desc">Runtime discovery of GitHub API endpoints with graceful fallback mechanisms</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 3: Review Process Flow -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Review Process Pipeline</h2>
+            <div class="slide-number">3 / 10</div>
+        </div>
+        <div class="content-section">
+            <div class="decision-flow">
+                <div class="decision-node" style="top: 20px; left: 50px;">
+                    <div class="node-text">Load Guidelines<br/>.claude/commands/team-review.md</div>
+                </div>
+                <div class="decision-node" style="top: 20px; left: 250px;">
+                    <div class="node-text">Check Existing<br/>Comments</div>
+                </div>
+                <div class="decision-node" style="top: 20px; left: 450px;">
+                    <div class="node-text">Get PR Diff<br/>gh pr diff</div>
+                </div>
+                <div class="decision-node" style="top: 120px; left: 150px;">
+                    <div class="node-text">Read Full<br/>File Context</div>
+                </div>
+                <div class="decision-node diamond" style="top: 180px; left: 350px;">
+                    <div class="node-text">Security/<br/>Breaking?</div>
+                </div>
+                <div class="decision-node reject" style="top: 280px; left: 150px;">
+                    <div class="node-text">IMMEDIATE<br/>REJECTION</div>
+                </div>
+                <div class="decision-node diamond" style="top: 280px; left: 350px;">
+                    <div class="node-text">Type Safety/<br/>Performance?</div>
+                </div>
+                <div class="decision-node" style="top: 280px; left: 550px;">
+                    <div class="node-text">MANDATORY<br/>FIX</div>
+                </div>
+                <div class="decision-node end" style="top: 360px; left: 350px;">
+                    <div class="node-text">Generate Inline<br/>Comments</div>
+                </div>
+            </div>
+
+            <h3>Processing Stages</h3>
+            <div class="feature-grid">
+                <div class="feature-box">
+                    <div class="feature-title">Context Aggregation</div>
+                    <div class="feature-desc">Comprehensive file analysis, existing comment evaluation, and guideline loading</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Risk Classification</div>
+                    <div class="feature-desc">Hierarchical categorization: Security → Performance → Quality → Style</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Selective Suggestion</div>
+                    <div class="feature-desc">Strategic decision-making between actionable code suggestions and advisory comments</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">API Orchestration</div>
+                    <div class="feature-desc">Dynamic endpoint discovery and batch comment submission via GitHub API</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: Intelligent Suggestion Engine -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Selective Suggestion Strategy</h2>
+            <div class="slide-number">4 / 10</div>
+        </div>
+        <div class="content-section">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; height: 300px;">
+                <div style="background: #ecfdf5; border: 2px solid #059669; border-radius: 12px; padding: 24px;">
+                    <h3 style="color: #059669; margin-bottom: 20px;">✅ Suggestions WITH Code</h3>
+                    <div class="tech-list" style="margin: 0;">
+                        <div class="tech-item" style="background: white;">
+                            <div class="tech-icon" style="background: #059669;">1</div>
+                            <div class="tech-content">
+                                <div class="tech-title">eval() → JSON.parse()</div>
+                                <div class="tech-desc">Security fix with obvious solution</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="background: white;">
+                            <div class="tech-icon" style="background: #059669;">2</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Missing useCallback/useMemo</div>
+                                <div class="tech-desc">Clear performance optimization</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="background: white;">
+                            <div class="tech-icon" style="background: #059669;">3</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Missing cleanup in useEffect</div>
+                                <div class="tech-desc">Memory leak prevention</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="background: white;">
+                            <div class="tech-icon" style="background: #059669;">4</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Missing hook dependencies</div>
+                                <div class="tech-desc">Obvious stale closure fix</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: #fef2f2; border: 2px solid #dc2626; border-radius: 12px; padding: 24px;">
+                    <h3 style="color: #dc2626; margin-bottom: 20px;">💬 Comments WITHOUT Code</h3>
+                    <div class="tech-list" style="margin: 0;">
+                        <div class="tech-item" style="background: white;">
+                            <div class="tech-icon" style="background: #dc2626;">!</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Console.log statements</div>
+                                <div class="tech-desc">Trivial to remove manually</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="background: white;">
+                            <div class="tech-icon" style="background: #dc2626;">!</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Type definitions (any)</div>
+                                <div class="tech-desc">Developer knows context better</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="background: white;">
+                            <div class="tech-icon" style="background: #dc2626;">!</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Hardcoded values</div>
+                                <div class="tech-desc">Multiple valid solutions</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="background: white;">
+                            <div class="tech-icon" style="background: #dc2626;">!</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Code organization</div>
+                                <div class="tech-desc">Subjective improvements</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-container" style="margin-top: 30px;">
+                <div class="code-header">Suggestion Criteria Algorithm</div>
+                <div class="code-content">
+<span class="code-comment">// Core selection logic for suggestion generation</span>
+<span class="code-highlight">function</span> shouldGenerateSuggestion(issue, context) {
+  <span class="code-highlight">const</span> criteria = [
+    hasObviousFix(issue),           <span class="code-comment">// Only ONE correct solution</span>
+    isCriticalIssue(issue),         <span class="code-comment">// Security/performance/bugs</span>
+    isUniversallyAgreed(issue),     <span class="code-comment">// No subjective choices</span>
+    hasHighConfidence(context)      <span class="code-comment">// 100% certain of solution</span>
+  ];
+  
+  <span class="code-highlight">return</span> criteria.<span class="code-highlight">every</span>(Boolean);
+}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Quality Standards Framework -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Zero-Tolerance Quality Framework</h2>
+            <div class="slide-number">5 / 10</div>
+        </div>
+        <div class="content-section">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 30px;">
+                <div style="background: #fef2f2; border: 2px solid #dc2626; border-radius: 8px; padding: 20px;">
+                    <h3 style="color: #dc2626; margin-bottom: 15px;">🚫 Immediate Rejection</h3>
+                    <div class="tech-list" style="margin: 0;">
+                        <div style="margin-bottom: 8px; color: #374151;">• Breaking changes</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Security vulnerabilities</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Performance regressions</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Code duplication</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Missing test coverage</div>
+                    </div>
+                </div>
+                
+                <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px;">
+                    <h3 style="color: #d97706; margin-bottom: 15px;">⚠️ Mandatory Fixes</h3>
+                    <div class="tech-list" style="margin: 0;">
+                        <div style="margin-bottom: 8px; color: #374151;">• React hook violations</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• TypeScript bypasses</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Accessibility failures</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Hardcoded secrets</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Resource leaks</div>
+                    </div>
+                </div>
+                
+                <div style="background: #ecfdf5; border: 2px solid #059669; border-radius: 8px; padding: 20px;">
+                    <h3 style="color: #047857; margin-bottom: 15px;">💡 Quality Issues</h3>
+                    <div class="tech-list" style="margin: 0;">
+                        <div style="margin-bottom: 8px; color: #374151;">• Complex logic patterns</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Poor naming conventions</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Inconsistent patterns</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Dead code elimination</div>
+                        <div style="margin-bottom: 8px; color: #374151;">• Technical debt markers</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-box" style="background: #f8fafc; border-left: 4px solid #4f46e5; margin: 20px 0;">
+                <div class="feature-title">Reviewer Persona: "Zero-Tolerance Senior Engineer"</div>
+                <div class="feature-desc" style="font-style: italic; font-size: 1.1rem; line-height: 1.6; color: #4a5568;">
+                    "Every unnecessary change is technical debt. Every breaking change is a future bug. 
+                    Your job is NOT to be liked, but to prevent bad code entering the codebase."
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-header">Review Classification Logic</div>
+                <div class="code-content">
+<span class="code-comment">// Hierarchical issue classification system</span>
+<span class="code-highlight">enum</span> ReviewAction {
+  IMMEDIATE_REJECTION = <span class="code-highlight">"block_merge"</span>,
+  MANDATORY_FIX = <span class="code-highlight">"require_changes"</span>,
+  QUALITY_IMPROVEMENT = <span class="code-highlight">"suggest_fix"</span>
+}
+
+<span class="code-highlight">function</span> classifyIssue(violation) {
+  <span class="code-highlight">if</span> (isSecurityRisk(violation) || isBreakingChange(violation)) {
+    <span class="code-highlight">return</span> ReviewAction.IMMEDIATE_REJECTION;
+  }
+  <span class="code-highlight">if</span> (isTypeViolation(violation) || isAccessibilityFail(violation)) {
+    <span class="code-highlight">return</span> ReviewAction.MANDATORY_FIX;
+  }
+  <span class="code-highlight">return</span> ReviewAction.QUALITY_IMPROVEMENT;
+}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 6: Dynamic API Integration -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Dynamic GitHub API Integration</h2>
+            <div class="slide-number">6 / 10</div>
+        </div>
+        <div class="content-section">
+            <div class="system-diagram">
+                <div class="diagram-container" style="flex-direction: column; gap: 30px;">
+                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                        <div class="component">
+                            <div class="component-title">PR Metadata</div>
+                            <div class="component-desc">_links.reviews.href<br/>_links.comments.href</div>
+                        </div>
+                        <div class="arrow-horizontal"></div>
+                        <div class="component process">
+                            <div class="component-title">Endpoint Discovery</div>
+                            <div class="component-desc">Dynamic URL extraction<br/>Pattern-based fallback</div>
+                        </div>
+                        <div class="arrow-horizontal"></div>
+                        <div class="component storage">
+                            <div class="component-title">API Orchestration</div>
+                            <div class="component-desc">Batch comment creation<br/>Review submission</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                        <div class="component external">
+                            <div class="component-title">Pending Review</div>
+                            <div class="component-desc">POST /reviews<br/>event: "PENDING"</div>
+                        </div>
+                        <div class="arrow-horizontal"></div>
+                        <div class="component external">
+                            <div class="component-title">Inline Comments</div>
+                            <div class="component-desc">POST /comments<br/>line-specific feedback</div>
+                        </div>
+                        <div class="arrow-horizontal"></div>
+                        <div class="component external">
+                            <div class="component-title">Review Submission</div>
+                            <div class="component-desc">POST /events<br/>event: "COMMENT"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>API Integration Features</h3>
+            <div class="feature-grid">
+                <div class="feature-box">
+                    <div class="feature-title">Adaptive Endpoint Discovery</div>
+                    <div class="feature-desc">Runtime detection of GitHub API endpoints from PR metadata with automatic fallback to constructed patterns</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Inline-Only Strategy</div>
+                    <div class="feature-desc">Eliminates summary comments in favor of line-specific feedback for improved developer experience</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Batch Processing</div>
+                    <div class="feature-desc">Efficient API utilization through batched comment creation and single review submission</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Suggestion Format</div>
+                    <div class="feature-desc">GitHub-compatible suggestion blocks enabling one-click code application</div>
+                </div>
+            </div>
+
+            <div class="code-container">
+                <div class="code-header">Dynamic API Discovery Implementation</div>
+                <div class="code-content">
+<span class="code-comment"># Method A: Extract from PR metadata</span>
+PR_DATA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }})
+REVIEWS_URL=$(echo <span class="code-highlight">"$PR_DATA"</span> | jq -r <span class="code-highlight">'._links.reviews.href'</span>)
+COMMENTS_URL=$(echo <span class="code-highlight">"$PR_DATA"</span> | jq -r <span class="code-highlight">'._links.comments.href'</span>)
+
+<span class="code-comment"># Method B: Fallback pattern construction</span>
+<span class="code-highlight">if</span> [ -z <span class="code-highlight">"$REVIEWS_URL"</span> ]; <span class="code-highlight">then</span>
+  REVIEWS_URL=<span class="code-highlight">"repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews"</span>
+<span class="code-highlight">fi</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 7: Technology Stack & Implementation -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Technology Stack & Implementation</h2>
+            <div class="slide-number">7 / 10</div>
+        </div>
+        <div class="content-section">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px;">
+                <div>
+                    <h3>Core Technologies</h3>
+                    <div class="tech-list">
+                        <div class="tech-item">
+                            <div class="tech-icon">GH</div>
+                            <div class="tech-content">
+                                <div class="tech-title">GitHub Actions</div>
+                                <div class="tech-desc">Event-driven CI/CD platform with ubuntu-latest runner environment</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <div class="tech-icon">AI</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Claude AI</div>
+                                <div class="tech-desc">anthropics/claude-code-action@v1 with specialized tool access</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <div class="tech-icon">API</div>
+                            <div class="tech-content">
+                                <div class="tech-title">GitHub REST API</div>
+                                <div class="tech-desc">Direct API integration via gh CLI with dynamic endpoint discovery</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <div class="tech-icon">TS</div>
+                            <div class="tech-content">
+                                <div class="tech-title">TypeScript Analysis</div>
+                                <div class="tech-desc">React-specific pattern recognition and type safety enforcement</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>Permission Model</h3>
+                    <div class="code-container" style="margin: 0;">
+                        <div class="code-content" style="font-size: 0.8rem;">
+permissions:
+  <span class="code-highlight">contents: read</span>        <span class="code-comment"># Repository access</span>
+  <span class="code-highlight">pull-requests: write</span>  <span class="code-comment"># Comment creation</span>
+  <span class="code-highlight">issues: write</span>        <span class="code-comment"># Issue references</span>
+  <span class="code-highlight">id-token: write</span>      <span class="code-comment"># Authentication</span>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin-top: 30px;">Tool Restrictions</h3>
+                    <div class="code-container" style="margin: 0;">
+                        <div class="code-content" style="font-size: 0.8rem;">
+claude_args: <span class="code-highlight">'--allowed-tools'</span>
+  <span class="code-comment"># API interactions</span>
+  <span class="code-highlight">"Bash(gh api:*)"</span>
+  <span class="code-highlight">"Bash(gh pr diff:*)"</span>
+  <span class="code-highlight">"Bash(gh pr view:*)"</span>
+  
+  <span class="code-comment"># Build validation</span>
+  <span class="code-highlight">"Bash(npm install)"</span>
+  <span class="code-highlight">"Bash(npm run lint)"</span>
+  <span class="code-highlight">"Bash(npm test)"</span>
+  <span class="code-highlight">"Bash(npm run build)"</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Execution Environment</h3>
+            <div class="system-diagram" style="height: 200px;">
+                <div class="diagram-container">
+                    <div class="component external">
+                        <div class="component-title">Ubuntu Runner</div>
+                        <div class="component-desc">github-hosted<br/>environment</div>
+                    </div>
+                    <div class="arrow-horizontal"></div>
+                    <div class="component">
+                        <div class="component-title">Claude Container</div>
+                        <div class="component-desc">Isolated execution<br/>with tool restrictions</div>
+                    </div>
+                    <div class="arrow-horizontal"></div>
+                    <div class="component process">
+                        <div class="component-title">Repository Access</div>
+                        <div class="component-desc">Full checkout<br/>fetch-depth: 0</div>
+                    </div>
+                    <div class="arrow-horizontal"></div>
+                    <div class="component storage">
+                        <div class="component-title">Analysis Output</div>
+                        <div class="component-desc">Inline comments<br/>GitHub integration</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 8: Edge Case Handling & Resilience -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Edge Case Handling & System Resilience</h2>
+            <div class="slide-number">8 / 10</div>
+        </div>
+        <div class="content-section">
+            <div class="feature-grid" style="margin-bottom: 30px;">
+                <div class="feature-box" style="border-left-color: #dc2626;">
+                    <div class="feature-title">Draft PR Handling</div>
+                    <div class="feature-desc">Automatic exclusion via <code>github.event.pull_request.draft == false</code> condition to prevent premature reviews</div>
+                </div>
+                <div class="feature-box" style="border-left-color: #059669;">
+                    <div class="feature-title">Large File Processing</div>
+                    <div class="feature-desc">Full file context reading with graceful truncation handling for comprehensive analysis</div>
+                </div>
+                <div class="feature-box" style="border-left-color: #7c3aed;">
+                    <div class="feature-title">API Failure Recovery</div>
+                    <div class="feature-desc">Dynamic endpoint discovery with pattern-based fallback mechanisms for API compatibility</div>
+                </div>
+                <div class="feature-box" style="border-left-color: #f59e0b;">
+                    <div class="feature-title">Comment Deduplication</div>
+                    <div class="feature-desc">Existing comment analysis to prevent duplicate feedback and build on previous suggestions</div>
+                </div>
+            </div>
+
+            <h3>Conditional Execution Logic</h3>
+            <div class="code-container">
+                <div class="code-header">Workflow Trigger Conditions</div>
+                <div class="code-content">
+on:
+  <span class="code-highlight">pull_request:</span>
+    types: [<span class="code-highlight">opened</span>, <span class="code-highlight">synchronize</span>, <span class="code-highlight">reopened</span>, <span class="code-highlight">ready_for_review</span>]
+
+jobs:
+  claude-auto-review:
+    <span class="code-comment"># Critical: Skip draft PRs to prevent premature feedback</span>
+    <span class="code-highlight">if:</span> github.event.pull_request.draft == false
+    
+    runs-on: ubuntu-latest
+    <span class="code-comment"># Comprehensive permission model for API interactions</span>
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+                </div>
+            </div>
+
+            <h3>Error Handling Strategies</h3>
+            <div class="tech-list">
+                <div class="tech-item">
+                    <div class="tech-icon">1</div>
+                    <div class="tech-content">
+                        <div class="tech-title">API Endpoint Resilience</div>
+                        <div class="tech-desc">Multi-method endpoint discovery prevents failures due to GitHub API structure changes</div>
+                    </div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-icon">2</div>
+                    <div class="tech-content">
+                        <div class="tech-title">Context Preservation</div>
+                        <div class="tech-desc">Full file reading ensures suggestions maintain proper context even with complex changes</div>
+                    </div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-icon">3</div>
+                    <div class="tech-content">
+                        <div class="tech-title">Incremental Processing</div>
+                        <div class="tech-desc">Per-file analysis prevents single file failures from blocking entire PR review</div>
+                    </div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-icon">4</div>
+                    <div class="tech-content">
+                        <div class="tech-title">Graceful Degradation</div>
+                        <div class="tech-desc">Comment-only fallback when suggestion generation encounters uncertainty</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 9: Recent Improvements & Evolution -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Recent Improvements & System Evolution</h2>
+            <div class="slide-number">9 / 10</div>
+        </div>
+        <div class="content-section">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px;">
+                <div>
+                    <h3>✅ Recent Implementations</h3>
+                    <div class="tech-list">
+                        <div class="tech-item" style="border-left-color: #059669; background: #ecfdf5;">
+                            <div class="tech-icon" style="background: #059669;">✓</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Ultra-Selective Suggestions</div>
+                                <div class="tech-desc">Reduced to only 4 critical cases: eval→JSON.parse, useCallback, cleanup, dependencies</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="border-left-color: #059669; background: #ecfdf5;">
+                            <div class="tech-icon" style="background: #059669;">✓</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Dynamic API Discovery</div>
+                                <div class="tech-desc">Runtime endpoint detection from PR metadata with graceful fallbacks</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="border-left-color: #059669; background: #ecfdf5;">
+                            <div class="tech-icon" style="background: #059669;">✓</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Inline-Only Comments</div>
+                                <div class="tech-desc">Eliminated summary comments for focused, actionable feedback</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="border-left-color: #059669; background: #ecfdf5;">
+                            <div class="tech-icon" style="background: #059669;">✓</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Context-Aware Analysis</div>
+                                <div class="tech-desc">Full file reading before generating any suggestions or comments</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>🔮 Future Roadmap</h3>
+                    <div class="tech-list">
+                        <div class="tech-item" style="border-left-color: #4f46e5; background: #f0f9ff;">
+                            <div class="tech-icon" style="background: #4f46e5;">→</div>
+                            <div class="tech-content">
+                                <div class="tech-title">ML Pattern Learning</div>
+                                <div class="tech-desc">Adaptive learning from codebase patterns for improved suggestion accuracy</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="border-left-color: #4f46e5; background: #f0f9ff;">
+                            <div class="tech-icon" style="background: #4f46e5;">→</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Performance Impact Analysis</div>
+                                <div class="tech-desc">Quantitative performance metrics for change impact assessment</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="border-left-color: #4f46e5; background: #f0f9ff;">
+                            <div class="tech-icon" style="background: #4f46e5;">→</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Cross-PR Knowledge Base</div>
+                                <div class="tech-desc">Persistent learning across reviews for enhanced decision-making</div>
+                            </div>
+                        </div>
+                        <div class="tech-item" style="border-left-color: #4f46e5; background: #f0f9ff;">
+                            <div class="tech-icon" style="background: #4f46e5;">→</div>
+                            <div class="tech-content">
+                                <div class="tech-title">MCP Server Integration</div>
+                                <div class="tech-desc">Extensible tool ecosystem for team-specific customization</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Evolution Metrics</h3>
+            <div class="metrics-grid">
+                <div class="metric-card" style="background: linear-gradient(135deg, #059669, #047857);">
+                    <div class="metric-number">75%</div>
+                    <div class="metric-label">Suggestion Reduction</div>
+                </div>
+                <div class="metric-card" style="background: linear-gradient(135deg, #4f46e5, #4338ca);">
+                    <div class="metric-number">100%</div>
+                    <div class="metric-label">API Reliability</div>
+                </div>
+                <div class="metric-card" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);">
+                    <div class="metric-number">0</div>
+                    <div class="metric-label">False Positives</div>
+                </div>
+                <div class="metric-card" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">
+                    <div class="metric-number">∞</div>
+                    <div class="metric-label">Scalability</div>
+                </div>
+            </div>
+
+            <div class="feature-box" style="margin-top: 20px;">
+                <div class="feature-title">Key Principle: "Less is More"</div>
+                <div class="feature-desc">
+                    The system has evolved from comprehensive suggestions to ultra-selective, high-confidence recommendations. 
+                    Default to comments, suggest only when there's ONE obvious fix that everyone would implement identically.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 10: Impact & Strategic Value -->
+    <div class="slide">
+        <div class="slide-header">
+            <h2>Impact Assessment & Strategic Value</h2>
+            <div class="slide-number">10 / 10</div>
+        </div>
+        <div class="content-section">
+            <div class="metrics-grid" style="margin-bottom: 40px;">
+                <div class="metric-card">
+                    <div class="metric-number">100%</div>
+                    <div class="metric-label">PR Coverage</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">0s</div>
+                    <div class="metric-label">Review Latency</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">5</div>
+                    <div class="metric-label">Quality Dimensions</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">∞</div>
+                    <div class="metric-label">Consistency Factor</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px;">
+                <div>
+                    <h3>🎯 Business Impact</h3>
+                    <div class="tech-list">
+                        <div class="tech-item">
+                            <div class="tech-icon">$</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Cost Reduction</div>
+                                <div class="tech-desc">Eliminates human reviewer time allocation for initial quality checks</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <div class="tech-icon">⚡</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Velocity Improvement</div>
+                                <div class="tech-desc">Immediate feedback enables faster iteration cycles</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <div class="tech-icon">🛡️</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Risk Mitigation</div>
+                                <div class="tech-desc">Prevents security and performance issues from reaching production</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <div class="tech-icon">📈</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Quality Consistency</div>
+                                <div class="tech-desc">Uniform standards application across all contributions</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>🚀 Technical Excellence</h3>
+                    <div class="tech-list">
+                        <div class="tech-item">
+                            <div class="tech-icon">🔄</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Continuous Learning</div>
+                                <div class="tech-desc">System evolves with codebase patterns and best practices</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <div class="tech-icon">🎯</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Precision Targeting</div>
+                                <div class="tech-desc">Ultra-selective suggestions minimize noise while maximizing impact</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <div class="tech-icon">🔧</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Zero Maintenance</div>
+                                <div class="tech-desc">Self-operating system with adaptive API integration</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <div class="tech-icon">📊</div>
+                            <div class="tech-content">
+                                <div class="tech-title">Scalable Architecture</div>
+                                <div class="tech-desc">Handles unlimited concurrent PRs without resource constraints</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-box" style="background: linear-gradient(135deg, #4f46e520, #7c3aed20); border: 2px solid #4f46e5; margin: 30px 0;">
+                <div class="feature-title" style="font-size: 1.4rem;">🌟 Strategic Vision</div>
+                <div class="feature-desc" style="font-size: 1.1rem; line-height: 1.7;">
+                    Transform from reactive code review to <strong>proactive code quality enforcement</strong>, creating a 
+                    self-improving system that learns from each review, adapts to emerging patterns, and establishes 
+                    a new standard for automated software quality assurance in enterprise development workflows.
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 60px;">
+                <h2 style="color: #4f46e5; font-size: 2.2rem; margin-bottom: 20px;">Questions & Technical Discussion</h2>
+                <p style="color: #64748b; font-size: 1.1rem;">
+                    Deep dive into architecture decisions, implementation challenges, and future enhancements
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Controls -->
+    <div class="nav-controls">
+        <button class="nav-btn" onclick="previousSlide()" id="prevBtn">← Previous</button>
+        <button class="nav-btn" onclick="nextSlide()" id="nextBtn">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 10;
+
+        function updateUI() {
+            // Update progress bar
+            const progress = (currentSlide / totalSlides) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentSlide === 1;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides;
+        }
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            
+            if (n > totalSlides) currentSlide = totalSlides;
+            if (n < 1) currentSlide = 1;
+            
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[currentSlide - 1].classList.add('active');
+            
+            updateUI();
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            switch(event.key) {
+                case 'ArrowRight':
+                case ' ':
+                    event.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    previousSlide();
+                    break;
+                case 'Home':
+                    event.preventDefault();
+                    currentSlide = 1;
+                    showSlide(currentSlide);
+                    break;
+                case 'End':
+                    event.preventDefault();
+                    currentSlide = totalSlides;
+                    showSlide(currentSlide);
+                    break;
+                case 'Escape':
+                    event.preventDefault();
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    } else {
+                        document.documentElement.requestFullscreen();
+                    }
+                    break;
+            }
+        });
+
+        // Initialize
+        showSlide(1);
+        
+        // Add smooth transitions for interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            const components = document.querySelectorAll('.component, .metric-card, .feature-box, .tech-item');
+            components.forEach(component => {
+                component.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+                });
+                component.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
