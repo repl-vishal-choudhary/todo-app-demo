@@ -5,7 +5,8 @@
       "Bash(git pull:*)",
       "Bash(gh api:*)",
       "Bash(cd:*)",
-      "Bash(gh pr comment:*)"
+      "Bash(gh pr comment:*)",
+      "Bash(git cherry-pick:*)"
     ],
     "deny": [],
     "ask": []
