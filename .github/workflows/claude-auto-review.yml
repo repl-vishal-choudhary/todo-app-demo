@@ -29,7 +29,9 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
             # PR Review for #${{ github.event.pull_request.number }}
-
+            
+            ## CRITICAL: USE ONLY INLINE COMMENTS - NO SUMMARY COMMENTS
+            
             First, read the team review guidelines from `.claude/commands/team-review.md` to understand the review standards and process.
 
             Then follow these steps:
@@ -55,9 +57,14 @@ jobs:
             - MANDATORY FIXES (breaking changes, security holes, performance killers,React violations, TypeScript issues, accessibility)
             - CODE QUALITY issues (naming, patterns, dead code)
 
-            ## 5. Create Inline Review Comments (Dynamic API Discovery)
-
-            **CRITICAL**: Use inline comments on specific lines, NOT summary comments!
+            ## 5. Create ONLY Inline Review Comments (NO SUMMARY):
+            
+            **FORBIDDEN COMMANDS - DO NOT USE:**
+            - ❌ NEVER use: `gh pr comment` (creates summary comments)
+            - ❌ NEVER use: `gh pr review --comment` (creates summary)
+            - ❌ NEVER post a general review summary
+            
+            **REQUIRED: Use ONLY inline comments at specific lines:**
             
             ### Step 1: Discover the correct API endpoints dynamically
             ```bash
@@ -116,21 +123,24 @@ jobs:
             - The suggested code must be the EXACT replacement for that line
             - Close with triple backticks: \`\`\`
 
-            ### Step 4: Submit the review
+            ### Step 4: Submit the review (comments only, no summary)
             ```bash
-            # Submit the pending review
+            # Submit the pending review with COMMENT event (not APPROVE/REQUEST_CHANGES)
             gh api "$REVIEWS_URL/${REVIEW_ID}/events" \
               --method POST \
               --field event="COMMENT"
             ```
 
-            **IMPORTANT NOTES:**
+            **REMEMBER:**
+            - Create one inline comment per issue
+            - Use line numbers from the diff
+            - Include suggestion blocks for fixes
+            - DO NOT create any summary comment
             - The line number must be from the DIFF (+/- lines), not the file line number
             - Use "side":"RIGHT" for additions, "side":"LEFT" for deletions
-            - Include suggestion blocks for direct commit capability
             - If API structure changes, the dynamic discovery will adapt
 
-            Remember: Follow the tone and standards defined in team-review.md - be direct, provide concrete fixes, no gentle language.
+            Follow the tone and standards defined in team-review.md - be direct, provide concrete fixes, no gentle language.
 
           claude_args: '--allowed-tools "Bash(gh api:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)"'
         env:
