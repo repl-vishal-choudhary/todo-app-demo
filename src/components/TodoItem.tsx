@@ -8,20 +8,23 @@ interface TodoItemProps {
   onDelete: (id: number) => void;
 }
 
+// Todo item component
 const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete }) => {
+  const handleToggle = () => onToggle(todo.id); // Missing useCallback
   return (
     <div className={`todo-item ${todo.completed ? 'completed' : ''}`}>
       <input
         type="checkbox"
         checked={todo.completed}
-        onChange={() => onToggle(todo.id)}
+        onChange={handleToggle}
         className="todo-checkbox"
       />
       <span className="todo-text">{todo.text}</span>
       <button
-        onClick={() => onDelete(todo.id)}
+        onClick={() => onDelete(todo.id)} // Could use useCallback
         className="delete-button"
         aria-label="Delete todo"
+        type="button"
       >
         ×
       </button>
