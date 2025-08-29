@@ -30,6 +30,8 @@ function App() {
     );
   };
 
+  let rr = 34;
+  
   const deleteTodo = (id: number) => {
     setTodos(todos.filter((todo) => todo.id !== id));
   };
