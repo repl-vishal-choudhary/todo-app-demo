@@ -82,19 +82,44 @@ jobs:
             ```
             
             ### Step 3: Add inline comments for EACH issue
-            For every issue found, create an inline comment with human-like language:
+            For EACH issue found in the code, create a separate inline comment with suggestion.
+            
+            **CRITICAL**: Every code issue needs a suggestion block that users can commit directly.
+            
+            Example for fixing `any` type:
             ```bash
-            # Use natural language + suggestion block (NO ISSUE/IMPACT format)
-            BODY="This needs proper typing, not \`any\`:
-            \`\`\`suggestion
-            export const TodoStats = ({ todos }: { todos: Todo[] }) => {
-            \`\`\`"
+            BODY=$(cat <<'EOF'
+This needs proper typing, not `any`:
+```suggestion
+const UserProfile = ({ userId }: { userId: string }) => {
+```
+EOF
+            )
             
             gh api "$COMMENTS_URL" \
               --method POST \
               --field commit_id="$COMMIT_SHA" \
-              --field path="src/components/TodoFilter.tsx" \
-              --field line=5 \
+              --field path="src/components/UserProfile.tsx" \
+              --field line=4 \
+              --field side="RIGHT" \
+              --field body="$BODY"
+            ```
+            
+            Example for removing console.log:
+            ```bash
+            BODY=$(cat <<'EOF'
+Remove the console.log before merging:
+```suggestion
+  // Removed console.log for production
+```
+EOF
+            )
+            
+            gh api "$COMMENTS_URL" \
+              --method POST \
+              --field commit_id="$COMMIT_SHA" \
+              --field path="src/components/UserProfile.tsx" \
+              --field line=6 \
               --field side="RIGHT" \
               --field body="$BODY"
             ```
