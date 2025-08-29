@@ -55,42 +55,64 @@ jobs:
             - MANDATORY FIXES (breaking changes, security holes, performance killers,React violations, TypeScript issues, accessibility)
             - CODE QUALITY issues (naming, patterns, dead code)
 
-            ## 5. Create Review Comments (Skip Duplicates)
+            ## 5. Create Inline Review Comments (Dynamic API Discovery)
 
-            **IMPORTANT**: Before adding any comment:
-            - Check if similar feedback already exists on that line/issue
-            - Skip if existing comment adequately addresses the problem
-            - Only add new comment if:
-              - No existing comment on this issue, OR
-              - Your suggestion is significantly better/more comprehensive
-              - The existing suggestion is incorrect or incomplete
-
-            Use GitHub CLI to create review comments:
-
-            For general PR comments:
+            **CRITICAL**: Use inline comments on specific lines, NOT summary comments!
+            
+            ### Step 1: Discover the correct API endpoints dynamically
             ```bash
-            gh pr comment ${{ github.event.pull_request.number }} --body "Your review comment"
+            # Method A: Get from PR metadata
+            PR_DATA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }})
+            
+            # Extract the reviews URL from the PR data
+            REVIEWS_URL=$(echo "$PR_DATA" | jq -r '._links.reviews.href' | sed 's|https://api.github.com||')
+            
+            # Extract the comments URL from the PR data  
+            COMMENTS_URL=$(echo "$PR_DATA" | jq -r '._links.comments.href' | sed 's|https://api.github.com||')
+            
+            # Method B: If _links not available, construct from pattern
+            if [ -z "$REVIEWS_URL" ]; then
+              REVIEWS_URL="repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews"
+              COMMENTS_URL="repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments"
+            fi
             ```
 
-            For creating a review with suggestions:
+            ### Step 2: Start a pending review
             ```bash
-            # Start a review
-            gh pr review ${{ github.event.pull_request.number }} --comment --body "Review summary"
+            # Use the discovered reviews endpoint
+            REVIEW_ID=$(gh api "$REVIEWS_URL" \
+              --method POST \
+              --field commit_id="${{ github.event.pull_request.head.sha }}" \
+              --field event="PENDING" \
+              --jq '.id')
             ```
 
-            If you need to use specific API endpoints for inline comments with suggestions:
-            1. First, discover the correct API endpoint: `gh api --help` or `gh pr review --help`
-            2. Use GitHub's suggestion format in comments for code suggestions:
-            ```markdown
-            ```suggestion
-            // Your suggested code here
-            ```
+            ### Step 3: Add inline comments at specific lines
+            For each issue found in the code, add an inline comment:
+            ```bash
+            # Use the discovered comments endpoint
+            gh api "$COMMENTS_URL" \
+              --method POST \
+              --field commit_id="${{ github.event.pull_request.head.sha }}" \
+              --field path="<file_path_from_diff>" \
+              --field line=<line_number_from_diff> \
+              --field side="RIGHT" \
+              --field body="**ISSUE:** <problem>\n**IMPACT:** <what_breaks>\n**FIX:**\n\`\`\`suggestion\n<corrected_code>\n\`\`\`\n**WHY:** <reasoning>"
             ```
 
-            Note: GitHub automatically renders suggestion blocks that users can commit directly.
-            For inline comments at specific lines, you may need to use:
-            - `gh pr review` with file and line specifications
-            - Or discover the current API format using `gh api --method GET repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}`
+            ### Step 4: Submit the review
+            ```bash
+            # Submit the pending review
+            gh api "$REVIEWS_URL/${REVIEW_ID}/events" \
+              --method POST \
+              --field event="COMMENT"
+            ```
+
+            **IMPORTANT NOTES:**
+            - The line number must be from the DIFF (+/- lines), not the file line number
+            - Use "side":"RIGHT" for additions, "side":"LEFT" for deletions
+            - Include suggestion blocks for direct commit capability
+            - If API structure changes, the dynamic discovery will adapt
 
             Remember: Follow the tone and standards defined in team-review.md - be direct, provide concrete fixes, no gentle language.
 
