@@ -35,7 +35,26 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: '--allowed-tools "Bash(git:*),Bash(gh:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)" --timeout 900000'
+          prompt: |
+            You were mentioned in a comment. Please respond to the user's request.
+            
+            If this is on a pull request and code review is requested:
+            1. First, read the team review guidelines from `.claude/commands/team-review.md`
+            2. Check existing comments: gh pr view ${{ github.event.issue.number || github.event.pull_request.number }} --comments
+            3. Get the PR diff using: gh pr diff ${{ github.event.issue.number || github.event.pull_request.number }}
+            4. Apply the review standards and process defined in team-review.md
+            5. Provide feedback using GitHub CLI commands (SKIP if similar comment exists):
+               - For general comments: `gh pr comment <PR_NUMBER> --body "Your comment"`
+               - For reviews: `gh pr review <PR_NUMBER> --comment --body "Review"`
+               - Use GitHub's suggestion format for code fixes:
+                 ```suggestion
+                 // Your suggested code
+                 ```
+            
+            Note: GitHub automatically renders suggestion blocks that users can commit directly.
+            
+            Otherwise, respond to the user's request as appropriate.
+          claude_args: '--allowed-tools "Bash(git:*),Bash(gh:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)"'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
