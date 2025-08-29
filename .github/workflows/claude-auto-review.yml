@@ -8,14 +8,14 @@ jobs:
   claude-auto-review:
     # Skip draft PRs
     if: github.event.pull_request.draft == false
-    
+
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
       pull-requests: write
       issues: write
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,58 +23,49 @@ jobs:
           fetch-depth: 0
 
       - name: Run Claude PR Action
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          timeout_minutes: "15"
-          allowed_tools: |
-            Bash(git:*)
-            Bash(gh:*)
-            Bash(npm install)
-            Bash(npm run lint)
-            Bash(npm test)
-            Bash(npm run build)
-          custom_instructions: |
-            This is an automatic review triggered by PR: #${{ github.event.pull_request.number }}
-            
-            CRITICAL: You MUST use inline comments for code review. DO NOT post a single block comment.
-            
-            Follow these EXACT steps to create inline comments:
-            
-            1. Get the PR diff using GitHub CLI:
-               gh pr diff ${{ github.event.pull_request.number }}
+          prompt: |
+            Review PR #${{ github.event.pull_request.number }} and provide comprehensive feedback.
+
+            Steps:
+            1. Use `gh pr diff ${{ github.event.pull_request.number }}` to get the PR diff
             
             2. Analyze the code changes for:
-               - Code quality issues
+               - Code quality and best practices
                - Security vulnerabilities  
                - Performance problems
-               - Best practices violations
                - Missing tests
-               - Accessibility issues
+               - React hooks usage issues
+               - TypeScript type safety
+               - Accessibility concerns
             
-            3. For EACH issue found, create inline comments using GitHub CLI:
-               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
-                 --method POST \
-                 --field path="path/to/file.js" \
-                 --field line=LINE_NUMBER \
-                 --field body="Your review comment here" \
-                 --field commit_id="${{ github.event.pull_request.head.sha }}"
+            3. Create a PR review with inline comments:
+               a. Start a review: 
+                  REVIEW_ID=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+                    --method POST \
+                    --field commit_id="${{ github.event.pull_request.head.sha }}" \
+                    --field event="PENDING" \
+                    --jq '.id')
+               
+               b. For each issue found, add inline comments using:
+                  gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+                    --method POST \
+                    --field commit_id="${{ github.event.pull_request.head.sha }}" \
+                    --field path="<file_path>" \
+                    --field line=<line_number> \
+                    --field side="RIGHT" \
+                    --field body="<your_comment>"
+               
+               c. Submit the review:
+                  gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/${REVIEW_ID}/events \
+                    --method POST \
+                    --field event="COMMENT"
             
-            Important notes:
-            - Use 'line' parameter for additions in the diff
-            - Use 'original_line' parameter for deletions in the diff  
-            - The line number must match exactly what's shown in the diff
-            - Path must be relative to repository root (no leading /)
-            - Each comment must reference the exact commit SHA
-            
-            DO NOT create a summary comment. ONLY use inline comments at specific lines.
-            
-            Focus on:
-            - React best practices and hooks usage
-            - TypeScript type safety
-            - Component performance (unnecessary re-renders)
-            - Accessibility (ARIA labels, keyboard navigation)
-            - Security issues (XSS, hardcoded secrets)
+            Important: Use line numbers from the diff (+/- lines), not file line numbers
+          
+          claude_args: '--allowed-tools "Bash(gh api:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)" --timeout 900000'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
