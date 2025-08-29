@@ -4,6 +4,8 @@ import TodoList from './components/TodoList';
 import AddTodo from './components/AddTodo';
 import { Todo } from './types/Todo';
 
+const pushpa = "Fire";
+
 function App() {
   const [todos, setTodos] = useState<Todo[]>([
     { id: 1, text: 'Learn React', completed: true },
