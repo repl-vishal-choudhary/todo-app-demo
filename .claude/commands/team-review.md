@@ -90,15 +90,15 @@ Follow this structured review process:
 
 1. **eval() to JSON.parse** - Security fix with ONE obvious solution
    ```
-   Never use eval() - massive security hole:
+   Never use eval() - it's a massive security hole:
    ```suggestion
    return JSON.parse(expr);
    ```
    ```
 
-2. **Missing useCallback/useMemo** - When function is clearly recreated in render
+2. **Missing useCallback** - When function is clearly recreated in render
    ```
-   This recreates on every render. Wrap it:
+   Wrap this in useCallback to prevent recreating on every render:
    ```suggestion
    const handleClick = useCallback(() => {
      // existing logic
@@ -108,7 +108,7 @@ Follow this structured review process:
 
 3. **Missing cleanup in useEffect** - Clear memory leak
    ```
-   You're leaking memory - add cleanup:
+   This will leak memory - return a cleanup function:
    ```suggestion
    useEffect(() => {
      const timer = setInterval(check, 1000);
@@ -119,7 +119,7 @@ Follow this structured review process:
 
 4. **Missing dependencies** - When it's obvious what's missing
    ```
-   Missing dependency causes stale closure:
+   Add the missing dependency to avoid stale closures:
    ```suggestion
    }, [value, delay]);
    ```
@@ -167,15 +167,24 @@ Follow this structured review process:
    This complex calculation needs a comment explaining the algorithm.
    ```
 
-#### ❌ Bad (AI-style):
+#### More Examples:
+
+**For useCallback:**
 ```
-**ISSUE:** Direct DOM manipulation
-**IMPACT:** State inconsistencies
+Wrap this in useCallback to prevent recreating on every render:
+```suggestion
+const fetchData = useCallback(async () => {
+  // function body
+}, [dependency]);
+```
 ```
 
-#### ✅ Good (human-style):
+**For cleanup:**
 ```
-Don't manipulate the DOM directly here — this needs to go through React state.
+You're not cleaning up the WebSocket connection:
+```suggestion
+return () => websocket.close();
+```
 ```
 
 #### More Human Examples with Working Suggestions:

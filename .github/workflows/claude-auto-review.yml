@@ -122,31 +122,41 @@ jobs:
               --field body="$BODY"
             ```
             
-            **IMPORTANT: Provide Suggestions for Clear Security/Performance Issues:**
+            **CRITICAL: Write Human-Like Reviews with Proper Suggestions:**
             
-            MUST PROVIDE SUGGESTIONS FOR:
-            1. eval() -> Always suggest JSON.parse as replacement
-            2. Missing cleanup in useEffect with setInterval/setTimeout -> Add return cleanup
-            3. Missing obvious dependencies in hooks -> Add the missing deps
-            4. Functions clearly recreated each render -> Add useCallback wrapper
+            For these issues, MUST provide suggestions with natural language:
             
-            USE COMMENTS ONLY FOR:
-            - Hardcoded strings/secrets (could be env/config/const - multiple solutions)
-            - any types (developer knows shape better)
-            - Magic numbers (where to put them varies)
-            - Console.logs (trivial to remove)
-            - Inline styles (CSS modules vs styled-components vs other)
-            
-            When providing suggestions, use this EXACT format:
-            ```bash
-            BODY=$(cat <<'EOF'
-            Your comment explaining the issue:
-            \`\`\`suggestion
-            replacement code here
-            \`\`\`
-            EOF
-            )
+            1. eval() usage:
+            "Never use eval() - it's a massive security hole:"
+            ```suggestion
+            return JSON.parse(expr);
             ```
+            
+            2. Missing cleanup:
+            "This will leak memory - return a cleanup function:"
+            ```suggestion
+            return () => websocket.close();
+            ```
+            
+            3. Missing useCallback:
+            "Wrap this in useCallback to prevent recreating on every render:"
+            ```suggestion
+            const functionName = useCallback(async () => {
+              // existing code
+            }, [dependencies]);
+            ```
+            
+            4. Missing dependencies:
+            "Add userId to the dependencies to avoid stale closures:"
+            ```suggestion
+            }, [userId]);
+            ```
+            
+            For other issues, use brief comments WITHOUT suggestions:
+            - "Remove the console.log"
+            - "Don't use any - define proper types"
+            - "Extract these magic numbers to constants"
+            - "Move inline styles to CSS modules"
 
             ### Step 4: Submit the review (comments only, no summary)
             ```bash
