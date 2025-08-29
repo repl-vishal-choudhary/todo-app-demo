@@ -66,15 +66,23 @@ Follow this structured review process:
 ## Inline Comment Format
 
 ### Comment Structure - No Fluff Format:
+**IMPORTANT**: For GitHub to recognize suggestions, use EXACT format with real newlines:
+
 ```
 **ISSUE:** [Direct problem statement - what's wrong]
 **IMPACT:** [What breaks/degrades - be specific]
 **FIX:**
 ```suggestion
-<exact_fix_code>
+[exact replacement code for the line - this will create a "Commit suggestion" button]
 ```
 **WHY:** [Technical reasoning - no opinions, just facts]
 ```
+
+**Critical for suggestions:**
+- Use actual newlines (not \n)
+- Triple backticks with word "suggestion": ```suggestion
+- The code must be the EXACT replacement for that specific line
+- Close with triple backticks on new line
 
 ### Example - Bad Code Gets Called Out:
 ```
