@@ -1,0 +1,80 @@
+name: Claude Auto Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  claude-auto-review:
+    # Skip draft PRs
+    if: github.event.pull_request.draft == false
+    
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude PR Action
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          timeout_minutes: "15"
+          allowed_tools: |
+            Bash(git:*)
+            Bash(gh:*)
+            Bash(npm install)
+            Bash(npm run lint)
+            Bash(npm test)
+            Bash(npm run build)
+          custom_instructions: |
+            This is an automatic review triggered by PR: #${{ github.event.pull_request.number }}
+            
+            CRITICAL: You MUST use inline comments for code review. DO NOT post a single block comment.
+            
+            Follow these EXACT steps to create inline comments:
+            
+            1. Get the PR diff using GitHub CLI:
+               gh pr diff ${{ github.event.pull_request.number }}
+            
+            2. Analyze the code changes for:
+               - Code quality issues
+               - Security vulnerabilities  
+               - Performance problems
+               - Best practices violations
+               - Missing tests
+               - Accessibility issues
+            
+            3. For EACH issue found, create inline comments using GitHub CLI:
+               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+                 --method POST \
+                 --field path="path/to/file.js" \
+                 --field line=LINE_NUMBER \
+                 --field body="Your review comment here" \
+                 --field commit_id="${{ github.event.pull_request.head.sha }}"
+            
+            Important notes:
+            - Use 'line' parameter for additions in the diff
+            - Use 'original_line' parameter for deletions in the diff  
+            - The line number must match exactly what's shown in the diff
+            - Path must be relative to repository root (no leading /)
+            - Each comment must reference the exact commit SHA
+            
+            DO NOT create a summary comment. ONLY use inline comments at specific lines.
+            
+            Focus on:
+            - React best practices and hooks usage
+            - TypeScript type safety
+            - Component performance (unnecessary re-renders)
+            - Accessibility (ARIA labels, keyboard navigation)
+            - Security issues (XSS, hardcoded secrets)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,21 @@
+.todo-list {
+  margin-top: 20px;
+}
+
+.todo-section {
+  margin-bottom: 30px;
+}
+
+.todo-section h3 {
+  color: #333;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.empty-message {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 40px 0;
+}
