@@ -109,9 +109,9 @@ jobs:
             **REMEMBER:**
             - Read ENTIRE files first for full context
             - Use human-like review language (see team-review.md)
-            - Create one inline comment per issue
+            - BE SELECTIVE: Only use suggestions for clear improvements (types, performance, security)
+            - Use plain comments for minor issues (console.logs, style, organization)
             - Use line numbers from the diff
-            - Include ```suggestion blocks for all code fixes
             - DO NOT create any summary comment
             
             Otherwise, respond to the user's request as appropriate.

@@ -80,27 +80,84 @@ Follow this structured review process:
 
 #### Content
 - Call out violations or risks directly (e.g. security issues, anti-patterns)
-- **ALWAYS provide a ```suggestion block when the fix involves code changes**
-- Suggestions must contain the EXACT replacement code for that line
+- Be selective with suggestions - only provide them when you're confident the fix improves the code
+- For minor issues or style preferences, use comments without suggestions
 - If needed, briefly explain why (but keep it short)
 
-### Examples
+## When to Use Suggestions vs Comments
 
-#### ❌ Bad (AI-style):
-```
-**ISSUE:** Hardcoded API key
-**IMPACT:** Security risk
-**FIX:** Use env vars
-**WHY:** Secrets must not be in code
-```
+### USE SUGGESTIONS for:
+1. **Type Safety Issues** - When you know the exact type that should be used
+   ```
+   Don't use `any` - the type should be:
+   ```suggestion
+   export function TaskManager(props: { tasks: Task[], onUpdate: (id: string) => void }) {
+   ```
+   ```
 
-#### ✅ Good (human-style):
-```
-You can't hardcode API keys in source. Move this to an environment variable:
-```suggestion
-const API_KEY = process.env.REACT_APP_API_KEY || '';
-```
-```
+2. **Performance Optimizations** - When functions clearly need memoization
+   ```
+   This callback recreates on every render. Wrap it:
+   ```suggestion
+   const handleClick = useCallback(() => {
+     // handler logic
+   }, [dependency]);
+   ```
+   ```
+
+3. **Security Vulnerabilities** - Critical fixes like eval(), hardcoded secrets
+   ```
+   Never use eval() - massive security hole:
+   ```suggestion
+   return JSON.parse(expr);
+   ```
+   ```
+
+4. **Memory Leaks** - Missing cleanup in hooks
+   ```
+   You're leaking memory - add cleanup:
+   ```suggestion
+   useEffect(() => {
+     const timer = setInterval(check, 1000);
+     return () => clearInterval(timer);
+   }, []);
+   ```
+   ```
+
+5. **Hardcoded Values** - When constants make more sense
+   ```
+   Extract this magic number:
+   ```suggestion
+   const MAX_RETRIES = 3;
+   const shouldRetry = attempts < MAX_RETRIES;
+   ```
+   ```
+
+### USE COMMENTS ONLY for:
+1. **Console.logs** - Simple to fix, no suggestion needed
+   ```
+   Remove the console.log before merging.
+   ```
+
+2. **Missing Comments** - Can't suggest what the comment should say
+   ```
+   This complex logic needs a comment explaining what it does.
+   ```
+
+3. **Code Organization** - Subjective improvements
+   ```
+   Consider moving this utility function to a separate file.
+   ```
+
+4. **Inline Styles** - Multiple ways to fix
+   ```
+   Don't use inline styles - move to CSS modules or styled components.
+   ```
+
+5. **Missing Tests** - Can't generate tests automatically
+   ```
+   This new feature needs unit tests.
+   ```
 
 #### ❌ Bad (AI-style):
 ```
@@ -191,6 +248,13 @@ const isHighLoad = todos.length > TODO_HIGH_LOAD_THRESHOLD;
 - Show exact performance impact with numbers
 - Identify which components/features will break
 - Reference existing patterns to follow
+
+### Review Philosophy:
+- **Be selective** - Not every issue needs a suggestion
+- **Suggest when confident** - Only provide suggestions when the fix is clear and beneficial
+- **Comment when unclear** - Use comments for issues with multiple solutions
+- **Focus on impact** - Prioritize suggestions for security, performance, and type safety
+- **Avoid nitpicking** - Don't suggest minor style changes unless they significantly improve readability
 
 ### NO GENTLE LANGUAGE:
 - ❌ "Consider maybe using..." → ✅ "Use debouncing here"

@@ -59,9 +59,11 @@ jobs:
             - Look for patterns, duplications, and inconsistencies
 
             ## 4. Apply Review Process
-            Follow the comprehensive review process defined in team-review.md, focusing on:
-            - MANDATORY FIXES (breaking changes, security holes, performance killers,React violations, TypeScript issues, accessibility)
-            - CODE QUALITY issues (naming, patterns, dead code)
+            Follow the comprehensive review process defined in team-review.md.
+            
+            **Selective Suggestion Strategy:**
+            - WITH suggestions: Type fixes (when exact type is known), useCallback/useMemo wrapping, security fixes (eval, API keys), memory leak fixes
+            - WITHOUT suggestions: console.logs, comments needed, code organization, inline styles, missing tests
 
             ## 5. Create ONLY Inline Review Comments (NO SUMMARY):
             
@@ -120,13 +122,13 @@ jobs:
               --field body="$BODY"
             ```
             
-            **CRITICAL for GitHub suggestions to work:**
+            **IMPORTANT: Be selective with suggestions:**
+            - Only provide suggestion blocks when you're confident the fix improves the code
+            - Use suggestions for: type safety (when you know exact types), performance (useCallback/useMemo), security (eval, hardcoded secrets), memory leaks
+            - Use comments only for: console.logs, missing docs, code organization, style issues
             - Read ENTIRE file first for context before suggesting changes
-            - Use human-like language (not ISSUE/IMPACT/FIX format)
-            - Start suggestion with exactly: \`\`\`suggestion (lowercase, no space)
+            - When using suggestions, format with: \`\`\`suggestion (lowercase, no space)
             - The code must be the EXACT replacement for that specific line only
-            - Close with triple backticks on new line
-            - User will see "Commit suggestion" button to apply the change
 
             ### Step 4: Submit the review (comments only, no summary)
             ```bash
