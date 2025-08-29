@@ -254,19 +254,41 @@ Before approving:
 ## Important Notes for Creating Suggestions
 
 ### GitHub Suggestion Format Requirements:
-1. **Exact Format**: Start with ```suggestion (no space, lowercase)
-2. **Line-by-Line**: Each suggestion replaces ONLY the specific line it's commenting on
-3. **Multi-line Changes**: For changes spanning multiple lines, create separate comments
-4. **Syntax Valid**: The suggested code must be syntactically correct
-5. **Context Aware**: Read the entire file first to ensure suggestions fit the context
+1. **Exact Format**: The body MUST contain these exact characters in order:
+   - Your comment text
+   - A newline
+   - Three backticks followed immediately by the word `suggestion` 
+   - A newline
+   - The exact replacement code for that line
+   - A newline  
+   - Three backticks
+2. **Use Heredoc**: When using gh api, use heredoc syntax: `BODY=$(cat <<'EOF' ... EOF)`
+3. **Line-by-Line**: Each suggestion replaces ONLY the specific line it's commenting on
+4. **Multi-line Changes**: For changes spanning multiple lines, create separate comments
+5. **Syntax Valid**: The suggested code must be syntactically correct
+6. **Context Aware**: Read the entire file first to ensure suggestions fit the context
 
 ### Example of a Working Suggestion:
-When commenting on line with `const API_KEY = 'sk-1234567890abcdef';`:
-```
+When using gh api to comment on line with `const API_KEY = 'sk-1234567890abcdef';`:
+
+```bash
+# Create body with EXACT format using heredoc
+BODY=$(cat <<'EOF'
 Never hardcode API keys. Use environment variables:
 ```suggestion
 const API_KEY = process.env.REACT_APP_API_KEY || '';
 ```
+EOF
+)
+
+# Post the comment
+gh api "repos/owner/repo/pulls/123/comments" \
+  --method POST \
+  --field commit_id="abc123" \
+  --field path="src/config.ts" \
+  --field line=15 \
+  --field side="RIGHT" \
+  --field body="$BODY"
 ```
 
 This creates a button that says "Commit suggestion" that the user can click to apply the change.
