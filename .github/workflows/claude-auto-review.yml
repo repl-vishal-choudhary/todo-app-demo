@@ -66,7 +66,7 @@ jobs:
             
             Important: Use line numbers from the diff (+/- lines), not file line numbers
           
-          claude_args: '--allowed-tools "Bash(gh api:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)" --timeout 900000'
+          claude_args: '--allowed-tools "Bash(gh api:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)"'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
