@@ -50,17 +50,6 @@ jobs:
             
             ## 5. Create ONLY Inline Review Comments (NO SUMMARY):
             
-            **GITHUB SUGGESTION FORMAT - MUST FOLLOW EXACTLY**:
-            The body field must contain this structure with REAL newlines:
-            ```
-            Comment explaining the issue in human language.
-            ```suggestion
-            exact_replacement_code_for_that_line();
-            ```
-            ```
-            
-            This format creates a "Commit suggestion" button in GitHub.
-            
             **FORBIDDEN COMMANDS - DO NOT USE:**
             - ❌ NEVER use: `gh pr comment` (creates summary comments)
             - ❌ NEVER use: `gh pr review --comment` (creates summary)
@@ -147,8 +136,7 @@ EOF
             - Use human-like review language (see team-review.md)
             - Create one inline comment per issue
             - Use line numbers from the diff
-            - The body MUST use heredoc (cat <<'EOF') to preserve newlines
-            - Include ```suggestion blocks with EXACT format for all code fixes
+            - Include ```suggestion blocks for all code fixes
             - DO NOT create any summary comment
             
             Otherwise, respond to the user's request as appropriate.
