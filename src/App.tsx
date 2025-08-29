@@ -28,9 +28,6 @@ function App() {
     );
   };
 
-  const deleteTodo = (id: number) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
-  };
 
   return (
     <div className="App">
