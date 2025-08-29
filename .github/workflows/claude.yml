@@ -106,14 +106,14 @@ jobs:
               --field event="COMMENT"
             ```
             
-            **REMEMBER - BE EXTREMELY SELECTIVE:**
+            **REMEMBER - Provide Suggestions for Security/Performance Issues:**
             - Read ENTIRE files first for full context
             - Use human-like review language (see team-review.md)
-            - DEFAULT TO COMMENTS - only suggest when there's ONE obvious fix
-            - ONLY suggest: eval->JSON.parse, obvious useCallback, missing cleanup, missing dependencies
+            - MUST SUGGEST: eval->JSON.parse, missing cleanup, missing deps, functions needing useCallback
             - COMMENT ONLY: hardcoded values, any types, console.logs, magic numbers, styles
             - Use line numbers from the diff
             - DO NOT create any summary comment
+            - Format suggestions properly with heredoc and triple backticks
             
             Otherwise, respond to the user's request as appropriate.
           claude_args: '--allowed-tools "Bash(git:*),Bash(gh:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)"'

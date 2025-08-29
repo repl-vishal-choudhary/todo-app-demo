@@ -122,14 +122,31 @@ jobs:
               --field body="$BODY"
             ```
             
-            **CRITICAL: BE EXTREMELY SELECTIVE WITH SUGGESTIONS:**
-            - DEFAULT TO COMMENTS - only use suggestions when there's ONE obvious fix
-            - ONLY suggest for: eval()->JSON.parse, missing useCallback (obvious cases), missing cleanup, missing dependencies
-            - NEVER suggest for: hardcoded strings (could be env/config/const), any types, magic numbers, console.logs
-            - Comments are better than wrong suggestions - when in doubt, use a comment
-            - The developer knows their codebase better than you
-            - When using suggestions, format with: \`\`\`suggestion (lowercase, no space)
-            - The code must be the EXACT replacement for that specific line only
+            **IMPORTANT: Provide Suggestions for Clear Security/Performance Issues:**
+            
+            MUST PROVIDE SUGGESTIONS FOR:
+            1. eval() -> Always suggest JSON.parse as replacement
+            2. Missing cleanup in useEffect with setInterval/setTimeout -> Add return cleanup
+            3. Missing obvious dependencies in hooks -> Add the missing deps
+            4. Functions clearly recreated each render -> Add useCallback wrapper
+            
+            USE COMMENTS ONLY FOR:
+            - Hardcoded strings/secrets (could be env/config/const - multiple solutions)
+            - any types (developer knows shape better)
+            - Magic numbers (where to put them varies)
+            - Console.logs (trivial to remove)
+            - Inline styles (CSS modules vs styled-components vs other)
+            
+            When providing suggestions, use this EXACT format:
+            ```bash
+            BODY=$(cat <<'EOF'
+            Your comment explaining the issue:
+            \`\`\`suggestion
+            replacement code here
+            \`\`\`
+            EOF
+            )
+            ```
 
             ### Step 4: Submit the review (comments only, no summary)
             ```bash
