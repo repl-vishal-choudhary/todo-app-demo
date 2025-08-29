@@ -4,7 +4,8 @@
       "WebSearch",
       "Bash(git pull:*)",
       "Bash(gh api:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(gh pr comment:*)"
     ],
     "deny": [],
     "ask": []

@@ -61,9 +61,9 @@ jobs:
             ## 4. Apply Review Process
             Follow the comprehensive review process defined in team-review.md.
             
-            **Selective Suggestion Strategy:**
-            - WITH suggestions: Type fixes (when exact type is known), useCallback/useMemo wrapping, security fixes (eval, API keys), memory leak fixes
-            - WITHOUT suggestions: console.logs, comments needed, code organization, inline styles, missing tests
+            **MINIMAL Suggestion Strategy - BE VERY SELECTIVE:**
+            - WITH suggestions (ONLY): eval->JSON.parse, obvious useCallback cases, missing cleanup in useEffect, missing hook dependencies
+            - WITHOUT suggestions (USE COMMENTS): hardcoded values, any types, magic numbers, console.logs, inline styles, commented code, everything else
 
             ## 5. Create ONLY Inline Review Comments (NO SUMMARY):
             
@@ -122,11 +122,12 @@ jobs:
               --field body="$BODY"
             ```
             
-            **IMPORTANT: Be selective with suggestions:**
-            - Only provide suggestion blocks when you're confident the fix improves the code
-            - Use suggestions for: type safety (when you know exact types), performance (useCallback/useMemo), security (eval, hardcoded secrets), memory leaks
-            - Use comments only for: console.logs, missing docs, code organization, style issues
-            - Read ENTIRE file first for context before suggesting changes
+            **CRITICAL: BE EXTREMELY SELECTIVE WITH SUGGESTIONS:**
+            - DEFAULT TO COMMENTS - only use suggestions when there's ONE obvious fix
+            - ONLY suggest for: eval()->JSON.parse, missing useCallback (obvious cases), missing cleanup, missing dependencies
+            - NEVER suggest for: hardcoded strings (could be env/config/const), any types, magic numbers, console.logs
+            - Comments are better than wrong suggestions - when in doubt, use a comment
+            - The developer knows their codebase better than you
             - When using suggestions, format with: \`\`\`suggestion (lowercase, no space)
             - The code must be the EXACT replacement for that specific line only
 

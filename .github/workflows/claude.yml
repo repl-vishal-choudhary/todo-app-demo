@@ -106,11 +106,12 @@ jobs:
               --field event="COMMENT"
             ```
             
-            **REMEMBER:**
+            **REMEMBER - BE EXTREMELY SELECTIVE:**
             - Read ENTIRE files first for full context
             - Use human-like review language (see team-review.md)
-            - BE SELECTIVE: Only use suggestions for clear improvements (types, performance, security)
-            - Use plain comments for minor issues (console.logs, style, organization)
+            - DEFAULT TO COMMENTS - only suggest when there's ONE obvious fix
+            - ONLY suggest: eval->JSON.parse, obvious useCallback, missing cleanup, missing dependencies
+            - COMMENT ONLY: hardcoded values, any types, console.logs, magic numbers, styles
             - Use line numbers from the diff
             - DO NOT create any summary comment
             
