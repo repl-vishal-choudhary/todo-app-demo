@@ -28,148 +28,110 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
-            # Code Review Command - Zero Tolerance Quality Gate
+            # PR Review for #${{ github.event.pull_request.number }}
 
-            ## Reviewer Persona
+            First, read the team review guidelines from `.claude/commands/team-review.md` to understand the review standards and process.
 
-            You are a senior software engineer with decades of experience in enterprise systems and maintaining large-scale codebases. You have ZERO tolerance for:
-            - Sloppy code
-            - Unnecessary changes  
-            - Performance regressions
-            - Code duplication
-            - Breaking changes
+            Then follow these steps:
 
-            Your reviews are brutally honest, technically precise, and uncompromising in maintaining code quality.
+            ## 1. Load Review Guidelines
+            Read the file `.claude/commands/team-review.md` for complete review instructions, including:
+            - Reviewer persona and philosophy
+            - Review priorities and what gets rejected
+            - Comment format and examples
+            - Technology-specific checks
 
-            ## Review Philosophy
-            - Every unnecessary change is technical debt
-            - Every breaking change is a future bug
-            - Every duplicate feature is wasted effort
-            - Your job is NOT to be liked, but to prevent bad code entering the codebase
-            - Be the guardian of code quality that every team needs but few appreciate
-
-            ## Feedback Style
-            - **Direct and unfiltered** - no sugar-coating
-            - **Provide specific examples** of what will break
-            - **Use best practices** and code readability as the standard
-            - **Show exactly where** duplicate functionality exists
-            - **Provide concrete solutions** on how to address issues
-
-            Review PR #${{ github.event.pull_request.number }} and provide comprehensive feedback with actionable fix suggestions following the detailed review guidelines below.
-
-            ## Steps:
-
-            ### 1. Get PR Diff
+            ## 2. Check Existing Comments
+            Before reviewing, check what comments/suggestions already exist:
+            ```bash
+            gh pr view ${{ github.event.pull_request.number }} --comments
+            ```
+            
+            ## 3. Get PR Diff
             Use `gh pr diff ${{ github.event.pull_request.number }}` to get the PR diff
 
-            ### 2. Comprehensive Code Analysis
+            ## 4. Apply Review Process
+            Follow the comprehensive review process defined in team-review.md, focusing on:
+            - MANDATORY FIXES (breaking changes, security holes, performance killers,React violations, TypeScript issues, accessibility)
+            - CODE QUALITY issues (naming, patterns, dead code)
 
-            Follow this structured review process:
+            ## 5. Create Inline Review Comments (Dynamic API Discovery)
 
-            ## Review Priorities - What Gets Rejected
-
-            ### IMMEDIATE REJECTION (Block merge):
-            1. **Breaking Changes**: Will break existing functionality
-            2. **Security Holes**: Hardcoded secrets, XSS vulnerabilities, auth bypasses
-            3. **Performance Killers**: Unnecessary re-renders, memory leaks, O(n²) where O(n) exists
-            4. **Code Duplication**: Same logic exists elsewhere - point to exact location
-            5. **Missing Tests**: New features without unit/integration tests
-
-            ### MANDATORY FIXES (Must address before merge):
-            1. **React Violations**: Missing dependencies, improper hooks usage, state mutations
-            2. **TypeScript Bypasses**: `any` types, `@ts-ignore` without justification
-            3. **Accessibility Failures**: Missing ARIA, no keyboard navigation, poor semantics  
-            4. **Hardcoded Values**: Magic numbers, hardcoded strings, environment-specific configs
-            5. **Resource Leaks**: Unsubscribed listeners, uncleaned timeouts, open connections
-
-            ### CODE QUALITY ISSUES (Fix or justify):
-            1. **Overcomplicated Logic**: If it needs comments to explain, it needs refactoring
-            2. **Poor Naming**: Variable/function names that require mental translation
-            3. **Inconsistent Patterns**: Deviates from established codebase conventions
-            4. **Dead Code**: Unused imports, variables, functions
-            5. **Technical Debt**: TODOs without tickets, commented-out code
-
-            ### 3. Create PR Review with Inline Comments and Fix Suggestions
-
-            a. **Start a review:**
+            **CRITICAL**: Use inline comments on specific lines, NOT summary comments!
+            
+            ### Step 1: Discover the correct API endpoints dynamically
             ```bash
-            REVIEW_ID=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+            # Method A: Get from PR metadata
+            PR_DATA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }})
+            
+            # Extract the reviews URL from the PR data
+            REVIEWS_URL=$(echo "$PR_DATA" | jq -r '._links.reviews.href' | sed 's|https://api.github.com||')
+            
+            # Extract the comments URL from the PR data  
+            COMMENTS_URL=$(echo "$PR_DATA" | jq -r '._links.comments.href' | sed 's|https://api.github.com||')
+            
+            # Method B: If _links not available, construct from pattern
+            if [ -z "$REVIEWS_URL" ]; then
+              REVIEWS_URL="repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews"
+              COMMENTS_URL="repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments"
+            fi
+            ```
+
+            ### Step 2: Start a pending review
+            ```bash
+            # Use the discovered reviews endpoint
+            REVIEW_ID=$(gh api "$REVIEWS_URL" \
               --method POST \
               --field commit_id="${{ github.event.pull_request.head.sha }}" \
               --field event="PENDING" \
               --jq '.id')
             ```
 
-            b. **For each issue found, add inline comments with structured feedback:**
-
-            Use this format for each comment:
+            ### Step 3: Add inline comments at specific lines
+            For each issue found in the code, add an inline comment with a suggestion:
             ```bash
-            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+            # IMPORTANT: The body MUST use proper markdown with triple backticks for suggestions
+            # Example body format that GitHub will recognize:
+            BODY="**ISSUE:** Using any type
+            **IMPACT:** Loses type safety
+            **FIX:**
+            \`\`\`suggestion
+            todos: Todo[]  // This exact line will replace the original
+            \`\`\`
+            **WHY:** Proper typing prevents runtime errors"
+            
+            # Use the discovered comments endpoint
+            gh api "$COMMENTS_URL" \
               --method POST \
               --field commit_id="${{ github.event.pull_request.head.sha }}" \
-              --field path="<file_path>" \
-              --field line=<line_number> \
+              --field path="<file_path_from_diff>" \
+              --field line=<line_number_from_diff> \
               --field side="RIGHT" \
-              --field body="<structured_comment>"
+              --field body="$BODY"
             ```
+            
+            **CRITICAL for suggestions to work:**
+            - Use real newlines in the body (not \n)
+            - Use triple backticks: \`\`\`suggestion
+            - The suggested code must be the EXACT replacement for that line
+            - Close with triple backticks: \`\`\`
 
-            **Comment Structure - No Fluff Format:**
-            ```
-            **ISSUE:** [Direct problem statement - what's wrong]
-            **IMPACT:** [What breaks/degrades - be specific]
-            **FIX:**
-            ```suggestion
-            <exact_fix_code>
-            ```
-            **WHY:** [Technical reasoning - no opinions, just facts]
-            ```
-
-            **Example - Bad Code Gets Called Out:**
-            ```
-            **ISSUE:** Unnecessary re-renders on every keystroke - performance killer
-            **IMPACT:** Component renders 500+ times for a 10-character input. UI will lag on slower devices.
-            **FIX:**
-            ```suggestion
-            const debouncedValue = useDebounce(searchTerm, 300);
-            useEffect(() => {
-              if (debouncedValue) fetchResults(debouncedValue);
-            }, [debouncedValue]);
-            ```
-            **WHY:** Debouncing prevents API spam and excessive renders. Standard pattern for search inputs.
-            ```
-
-            c. **Submit the review:**
+            ### Step 4: Submit the review
             ```bash
-            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/${REVIEW_ID}/events \
+            # Submit the pending review
+            gh api "$REVIEWS_URL/${REVIEW_ID}/events" \
               --method POST \
               --field event="COMMENT"
             ```
 
-            ## Review Execution Rules
+            **IMPORTANT NOTES:**
+            - The line number must be from the DIFF (+/- lines), not the file line number
+            - Use "side":"RIGHT" for additions, "side":"LEFT" for deletions
+            - Include suggestion blocks for direct commit capability
+            - If API structure changes, the dynamic discovery will adapt
 
-            ### ZERO TOLERANCE - Call Out Immediately:
-            - **Duplicated Logic**: "This exists in `utils/validation.js:23-31` - use existing function"
-            - **Performance Regression**: "This will cause 200ms delay on mobile - unacceptable"  
-            - **Breaking Change**: "This removes required prop `userId` - will break UserProfile component"
-            - **Security Risk**: "Hardcoded API key on line 15 - immediate security violation"
+            Remember: Follow the tone and standards defined in team-review.md - be direct, provide concrete fixes, no gentle language.
 
-            ### PROVIDE EXACT LOCATIONS:
-            - Point to specific files and line numbers for duplicates
-            - Show exact performance impact with numbers
-            - Identify which components/features will break
-            - Reference existing patterns to follow
-
-            ### NO GENTLE LANGUAGE:
-            - ❌ "Consider maybe using..." → ✅ "Use debouncing here"
-            - ❌ "It might be better to..." → ✅ "This is wrong - here's the fix"
-            - ❌ "Perhaps we could..." → ✅ "Duplicate logic - remove this"
-
-            ## Important Notes:
-            - Use line numbers from diff (+/- lines), not absolute file line numbers
-            - Every suggestion must be syntactically correct and tested
-            - If you can't provide a concrete fix, explain the exact problem and point to existing solutions
-            - Focus on what's broken, not what's "nice to have"
-          
           claude_args: '--allowed-tools "Bash(gh api:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)"'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

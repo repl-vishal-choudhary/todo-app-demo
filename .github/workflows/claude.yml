@@ -35,7 +35,57 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: '--allowed-tools "Bash(git:*),Bash(gh:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)" --timeout 900000'
+          prompt: |
+            You were mentioned in a comment. Please respond to the user's request.
+            
+            If this is on a pull request and code review is requested:
+            1. First, read the team review guidelines from `.claude/commands/team-review.md`
+            2. Check existing comments: gh pr view ${{ github.event.issue.number || github.event.pull_request.number }} --comments
+            3. Get the PR diff using: gh pr diff ${{ github.event.issue.number || github.event.pull_request.number }}
+            4. Apply the review standards and process defined in team-review.md
+            5. Create inline review comments using dynamic API discovery:
+            
+            ### Discover API endpoints:
+            ```bash
+            PR_NUM=${{ github.event.issue.number || github.event.pull_request.number }}
+            PR_DATA=$(gh api repos/${{ github.repository }}/pulls/${PR_NUM})
+            REVIEWS_URL=$(echo "$PR_DATA" | jq -r '._links.reviews.href' | sed 's|https://api.github.com||')
+            COMMENTS_URL=$(echo "$PR_DATA" | jq -r '._links.comments.href' | sed 's|https://api.github.com||')
+            
+            # Fallback if _links not available
+            if [ -z "$REVIEWS_URL" ]; then
+              REVIEWS_URL="repos/${{ github.repository }}/pulls/${PR_NUM}/reviews"
+              COMMENTS_URL="repos/${{ github.repository }}/pulls/${PR_NUM}/comments"
+            fi
+            ```
+            
+            ### Create inline comments with suggestions:
+            ```bash
+            # Start review
+            REVIEW_ID=$(gh api "$REVIEWS_URL" --method POST --field commit_id="HEAD" --field event="PENDING" --jq '.id')
+            
+            # Add inline comment with proper suggestion format
+            # IMPORTANT: Use actual newlines and triple backticks for suggestions
+            BODY="**ISSUE:** [problem description]
+            **FIX:**
+            \`\`\`suggestion
+            [exact replacement code for this line]
+            \`\`\`
+            **WHY:** [reasoning]"
+            
+            gh api "$COMMENTS_URL" --method POST \
+              --field commit_id="HEAD" \
+              --field path="<file>" \
+              --field line=<line_from_diff> \
+              --field side="RIGHT" \
+              --field body="$BODY"
+            
+            # Submit review
+            gh api "$REVIEWS_URL/${REVIEW_ID}/events" --method POST --field event="COMMENT"
+            ```
+            
+            Otherwise, respond to the user's request as appropriate.
+          claude_args: '--allowed-tools "Bash(git:*),Bash(gh:*),Bash(npm install),Bash(npm run lint),Bash(npm test),Bash(npm run build)"'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
