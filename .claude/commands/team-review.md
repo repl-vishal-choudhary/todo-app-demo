@@ -86,7 +86,7 @@ Follow this structured review process:
 
 ## When to Use Suggestions vs Comments
 
-### 🎯 USE SUGGESTIONS ONLY FOR (Be VERY Selective):
+### 🎯 MUST PROVIDE SUGGESTIONS FOR These Security/Performance Issues:
 
 1. **eval() to JSON.parse** - Security fix with ONE obvious solution
    ```
@@ -257,18 +257,18 @@ const isHighLoad = todos.length > TODO_HIGH_LOAD_THRESHOLD;
 - Identify which components/features will break
 - Reference existing patterns to follow
 
-### Review Philosophy - BE EXTREMELY SELECTIVE:
+### Review Philosophy - Balance Helpful Suggestions with Developer Autonomy:
 
-#### Core Principle: **Less is More**
-- **ONLY suggest when there's ONE obvious fix** that everyone would implement the same way
-- **Default to comments** - When in doubt, use a comment instead of a suggestion
-- **Let developers decide** - They know their codebase better than you
+#### Core Principle: **Suggest for Critical Issues, Comment for Preferences**
+- **MUST suggest for security/performance issues** with clear fixes
+- **Use comments for style/organization** issues with multiple solutions
+- **Let developers decide implementation details** for their codebase
 
-#### Suggestion Criteria (ALL must be true):
-1. ✅ There's only ONE correct way to fix it
-2. ✅ The fix is obvious and universally agreed upon
-3. ✅ It's a critical issue (security, memory leak, or clear bug)
-4. ✅ You're 100% confident in the solution
+#### When to Provide Suggestions:
+1. ✅ **Security Issues**: eval() -> JSON.parse (always)
+2. ✅ **Memory Leaks**: Missing cleanup in useEffect with timers
+3. ✅ **Performance**: Functions clearly recreated each render -> useCallback
+4. ✅ **Bug Fixes**: Missing dependencies in hooks causing stale closures
 
 #### Examples of Good Suggestions:
 - `eval()` → `JSON.parse()` (security, one fix)
@@ -276,12 +276,13 @@ const isHighLoad = todos.length > TODO_HIGH_LOAD_THRESHOLD;
 - Missing dependency in hooks (bug, obvious fix)
 - Function recreation → useCallback (performance, clear fix)
 
-#### Examples to AVOID Suggesting:
-- Hardcoded strings (could be env, config, or constants)
-- Type definitions (developer knows the shape better)
-- Magic numbers (where to put them varies)
-- Console.logs (trivial to remove)
-- Code structure (subjective)
+#### When to Use Comments Only:
+- **Hardcoded strings/secrets**: Could be env vars, config file, or constants
+- **Type definitions**: Developer knows the data shape better
+- **Magic numbers**: Location varies (constants file, top of file, inline)
+- **Console.logs**: Trivial to remove, no suggestion needed
+- **Code structure**: Subjective and varies by team preference
+- **Inline styles**: Multiple solutions (CSS modules, styled-components, etc)
 
 ### NO GENTLE LANGUAGE:
 - ❌ "Consider maybe using..." → ✅ "Use debouncing here"
