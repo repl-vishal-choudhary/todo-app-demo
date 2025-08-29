@@ -45,7 +45,8 @@ jobs:
             1. First, read the team review guidelines from `.claude/commands/team-review.md`
             2. Check existing comments: gh pr view ${{ github.event.issue.number || github.event.pull_request.number }} --comments
             3. Get the PR diff using: gh pr diff ${{ github.event.issue.number || github.event.pull_request.number }}
-            4. Apply the review standards and process defined in team-review.md
+            4. **For each file in diff: Read the ENTIRE file first to understand context**
+            5. Apply the review standards and process defined in team-review.md
             
             ## 5. Create ONLY Inline Review Comments (NO SUMMARY):
             
@@ -81,16 +82,13 @@ jobs:
             ```
             
             ### Step 3: Add inline comments for EACH issue
-            For every issue found, create an inline comment:
+            For every issue found, create an inline comment with human-like language:
             ```bash
-            # Example with proper suggestion format
-            BODY="**ISSUE:** Using any type
-            **IMPACT:** Loses type safety
-            **FIX:**
+            # Use natural language + suggestion block (NO ISSUE/IMPACT format)
+            BODY="This needs proper typing, not \`any\`:
             \`\`\`suggestion
-            todos: Todo[]
-            \`\`\`
-            **WHY:** Proper typing prevents runtime errors"
+            export const TodoStats = ({ todos }: { todos: Todo[] }) => {
+            \`\`\`"
             
             gh api "$COMMENTS_URL" \
               --method POST \
@@ -109,9 +107,11 @@ jobs:
             ```
             
             **REMEMBER:**
+            - Read ENTIRE files first for full context
+            - Use human-like review language (see team-review.md)
             - Create one inline comment per issue
             - Use line numbers from the diff
-            - Include suggestion blocks for fixes
+            - Include ```suggestion blocks for all code fixes
             - DO NOT create any summary comment
             
             Otherwise, respond to the user's request as appropriate.

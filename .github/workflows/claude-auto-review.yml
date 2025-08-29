@@ -49,8 +49,14 @@ jobs:
             gh pr view ${{ github.event.pull_request.number }} --comments
             ```
             
-            ## 3. Get PR Diff
-            Use `gh pr diff ${{ github.event.pull_request.number }}` to get the PR diff
+            ## 3. Get PR Diff and Analyze Full Files
+            ```bash
+            gh pr diff ${{ github.event.pull_request.number }}
+            ```
+            **IMPORTANT**: For each file in the diff:
+            - Read the ENTIRE file to understand full context
+            - Analyze how changes affect the whole file
+            - Look for patterns, duplications, and inconsistencies
 
             ## 4. Apply Review Process
             Follow the comprehensive review process defined in team-review.md, focusing on:
@@ -97,15 +103,12 @@ jobs:
             ### Step 3: Add inline comments at specific lines
             For each issue found in the code, add an inline comment with a suggestion:
             ```bash
-            # IMPORTANT: The body MUST use proper markdown with triple backticks for suggestions
-            # Example body format that GitHub will recognize:
-            BODY="**ISSUE:** Using any type
-            **IMPACT:** Loses type safety
-            **FIX:**
+            # CRITICAL: Format for GitHub to show "Commit suggestion" button:
+            # Use natural language + suggestion block (no ISSUE/IMPACT structure)
+            BODY="This needs proper typing, not \`any\`:
             \`\`\`suggestion
-            todos: Todo[]  // This exact line will replace the original
-            \`\`\`
-            **WHY:** Proper typing prevents runtime errors"
+            export const TodoStats = ({ todos }: { todos: Todo[] }) => {
+            \`\`\`"
             
             # Use the discovered comments endpoint
             gh api "$COMMENTS_URL" \
@@ -117,11 +120,13 @@ jobs:
               --field body="$BODY"
             ```
             
-            **CRITICAL for suggestions to work:**
-            - Use real newlines in the body (not \n)
-            - Use triple backticks: \`\`\`suggestion
-            - The suggested code must be the EXACT replacement for that line
-            - Close with triple backticks: \`\`\`
+            **CRITICAL for GitHub suggestions to work:**
+            - Read ENTIRE file first for context before suggesting changes
+            - Use human-like language (not ISSUE/IMPACT/FIX format)
+            - Start suggestion with exactly: \`\`\`suggestion (lowercase, no space)
+            - The code must be the EXACT replacement for that specific line only
+            - Close with triple backticks on new line
+            - User will see "Commit suggestion" button to apply the change
 
             ### Step 4: Submit the review (comments only, no summary)
             ```bash

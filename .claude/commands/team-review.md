@@ -33,8 +33,12 @@ Before reviewing, check what's already been commented:
 - Skip adding comments if the issue is already adequately addressed
 - Only add new comments if they provide better/additional value
 
-### 2. Get PR Diff
-Use `gh pr diff <PR_NUMBER>` to get the PR diff
+### 2. Get PR Diff and Analyze Full Context
+- Use `gh pr diff <PR_NUMBER>` to get the PR diff
+- **CRITICAL**: For each file in the diff, read the ENTIRE file first to understand context
+- Analyze how changes affect the whole file, not just individual lines
+- Consider the file's purpose, patterns, and existing code style
+- Look for issues that only become apparent with full context (e.g., duplicate logic, inconsistent patterns)
 
 ### 3. Comprehensive Code Analysis
 
@@ -76,9 +80,9 @@ Follow this structured review process:
 
 #### Content
 - Call out violations or risks directly (e.g. security issues, anti-patterns)
-- Always suggest the correct or preferred approach
+- **ALWAYS provide a ```suggestion block when the fix involves code changes**
+- Suggestions must contain the EXACT replacement code for that line
 - If needed, briefly explain why (but keep it short)
-- Use ```suggestion blocks for fixes when appropriate
 
 ### Examples
 
@@ -109,7 +113,7 @@ const API_KEY = process.env.REACT_APP_API_KEY || '';
 Don't manipulate the DOM directly here — this needs to go through React state.
 ```
 
-#### More Human Examples:
+#### More Human Examples with Working Suggestions:
 
 **For type safety issues:**
 ```
@@ -118,6 +122,12 @@ This needs proper typing, not `any`:
 export const TodoStats = ({ todos }: { todos: Todo[] }) => {
 ```
 ```
+
+**IMPORTANT for GitHub Suggestions to Work:**
+1. The suggestion block must start with exactly: ```suggestion (three backticks + word "suggestion")
+2. The code inside must be the EXACT replacement for that specific line
+3. End with three backticks on a new line
+4. GitHub will show an "Add suggestion to batch" or "Commit suggestion" button
 
 **For performance issues:**
 ```
@@ -152,7 +162,12 @@ useEffect(() => {
 **For console.logs:**
 ```
 Remove the console.log before merging.
+```suggestion
+  // Removed console.log
 ```
+```
+
+Note: For line deletions, use an empty suggestion or a comment explaining the removal.
 
 **For magic numbers:**
 ```
@@ -236,9 +251,29 @@ Before approving:
 - [ ] Accessibility requirements met
 - [ ] No code duplication
 
-## Important Notes
+## Important Notes for Creating Suggestions
+
+### GitHub Suggestion Format Requirements:
+1. **Exact Format**: Start with ```suggestion (no space, lowercase)
+2. **Line-by-Line**: Each suggestion replaces ONLY the specific line it's commenting on
+3. **Multi-line Changes**: For changes spanning multiple lines, create separate comments
+4. **Syntax Valid**: The suggested code must be syntactically correct
+5. **Context Aware**: Read the entire file first to ensure suggestions fit the context
+
+### Example of a Working Suggestion:
+When commenting on line with `const API_KEY = 'sk-1234567890abcdef';`:
+```
+Never hardcode API keys. Use environment variables:
+```suggestion
+const API_KEY = process.env.REACT_APP_API_KEY || '';
+```
+```
+
+This creates a button that says "Commit suggestion" that the user can click to apply the change.
+
+### Review Guidelines:
 - Use line numbers from diff (+/- lines), not absolute file line numbers
 - Every suggestion must be syntactically correct and tested
-- If you can't provide a concrete fix, explain the exact problem and point to existing solutions
+- Read the entire file before commenting to understand context
 - Focus on what's broken, not what's "nice to have"
 - Remember: Your job is to protect the codebase, not make friends
