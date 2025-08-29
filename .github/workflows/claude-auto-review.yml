@@ -101,52 +101,21 @@ jobs:
             ```
 
             ### Step 3: Add inline comments at specific lines
-            For EACH issue found in the code, create a separate inline comment.
-            
-            **CRITICAL INSTRUCTION FOR SUGGESTIONS**:
-            When you find code that needs fixing (like `any` types, console.logs, eval(), etc):
-            1. Create a human-like comment explaining the issue
-            2. Include a suggestion block with the EXACT replacement code
-            3. The suggestion must use proper markdown formatting
-            
-            **Example commands you should run for each issue:**
-            
-            For a type issue on line 4 of UserProfile.tsx:
+            For each issue found in the code, add an inline comment with a suggestion:
             ```bash
-            # Create the comment body with proper formatting
-            BODY=$(cat <<'EOF'
-This needs proper typing, not `any`:
-```suggestion
-const UserProfile = ({ userId }: { userId: string }) => {
-```
-EOF
-            )
+            # CRITICAL: Format for GitHub to show "Commit suggestion" button:
+            # Use natural language + suggestion block (no ISSUE/IMPACT structure)
+            BODY="This needs proper typing, not \`any\`:
+            \`\`\`suggestion
+            export const TodoStats = ({ todos }: { todos: Todo[] }) => {
+            \`\`\`"
             
-            # Post the comment
+            # Use the discovered comments endpoint
             gh api "$COMMENTS_URL" \
               --method POST \
               --field commit_id="${{ github.event.pull_request.head.sha }}" \
-              --field path="src/components/UserProfile.tsx" \
-              --field line=4 \
-              --field side="RIGHT" \
-              --field body="$BODY"
-            ```
-            
-            For removing console.log on line 6:
-            ```bash  
-            BODY=$(cat <<'EOF'
-Remove the console.log before merging:
-```suggestion
-  // Removed console.log for production
-```
-EOF
-            )
-            
-            gh api "$COMMENTS_URL" \
-              --method POST \
-              --field commit_id="${{ github.event.pull_request.head.sha }}" \
-              --field path="src/components/UserProfile.tsx" \
-              --field line=6 \
+              --field path="<file_path_from_diff>" \
+              --field line=<line_number_from_diff> \
               --field side="RIGHT" \
               --field body="$BODY"
             ```
