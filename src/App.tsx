@@ -11,7 +11,7 @@ function App() {
     { id: 3, text: 'Test Claude Auto Review', completed: false },
   ]);
 
-  asdfgthyujkl
+  asdfgthyujkl12321
   
   const addTodo = (text: string) => {
     const newTodo: Todo = {
